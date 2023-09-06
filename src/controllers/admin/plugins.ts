@@ -1,31 +1,31 @@
-'use strict';
+import * as nconf from 'nconf';
+import * as winston from 'winston';
+import * as plugins from '../../plugins';
+import * as meta from '../../meta';
 
-const nconf = require('nconf');
-const winston = require('winston');
-const plugins = require('../../plugins');
-const meta = require('../../meta');
+const pluginsController: any = {};
 
-const pluginsController = module.exports;
-
-pluginsController.get = async function (req, res) {
+// The next line calls a function in a module that has not been updated to TS yet
+// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+pluginsController.get = async function (req: any, res: any) {
     const [compatible, all, trending] = await Promise.all([
         getCompatiblePlugins(),
         getAllPlugins(),
         plugins.listTrending(),
     ]);
 
-    const compatiblePkgNames = compatible.map(pkgData => pkgData.name);
-    const installedPlugins = compatible.filter(plugin => plugin && plugin.installed);
-    const activePlugins = all.filter(plugin => plugin && plugin.installed && plugin.active);
+    const compatiblePkgNames = compatible.map((pkgData: any) => pkgData.name);
+    const installedPlugins = compatible.filter((plugin: any) => plugin && plugin.installed);
+    const activePlugins = all.filter((plugin: any) => plugin && plugin.installed && plugin.active);
 
-    const trendingScores = trending.reduce((memo, cur) => {
+    const trendingScores: Record<string, number> = trending.reduce((memo: Record<string, number>, cur: any) => {
         memo[cur.label] = cur.value;
         return memo;
     }, {});
     const trendingPlugins = all
-        .filter(plugin => plugin && Object.keys(trendingScores).includes(plugin.id))
-        .sort((a, b) => trendingScores[b.id] - trendingScores[a.id])
-        .map((plugin) => {
+        .filter((plugin: any) => plugin && Object.keys(trendingScores).includes(plugin.id))
+        .sort((a: any, b: any) => trendingScores[b.id] - trendingScores[a.id])
+        .map((plugin: any) => {
             plugin.downloads = trendingScores[plugin.id];
             return plugin;
         });
@@ -36,14 +36,14 @@ pluginsController.get = async function (req, res) {
         activeCount: activePlugins.length,
         inactiveCount: Math.max(0, installedPlugins.length - activePlugins.length),
         canChangeState: !nconf.get('plugins:active'),
-        upgradeCount: compatible.reduce((count, current) => {
+        upgradeCount: compatible.reduce((count: number, current: any) => {
             if (current.installed && current.outdated) {
                 count += 1;
             }
             return count;
         }, 0),
-        download: compatible.filter(plugin => !plugin.installed),
-        incompatible: all.filter(plugin => !compatiblePkgNames.includes(plugin.name)),
+        download: compatible.filter((plugin: any) => !plugin.installed),
+        incompatible: all.filter((plugin: any) => !compatiblePkgNames.includes(plugin.name)),
         trending: trendingPlugins,
         submitPluginUsage: meta.config.submitPluginUsage,
         version: nconf.get('version'),
@@ -58,7 +58,7 @@ async function getAllPlugins() {
     return await getPlugins(false);
 }
 
-async function getPlugins(matching) {
+async function getPlugins(matching: boolean) {
     try {
         const pluginsData = await plugins.list(matching);
         return pluginsData || [];
@@ -67,3 +67,5 @@ async function getPlugins(matching) {
         return [];
     }
 }
+
+export = pluginsController;
